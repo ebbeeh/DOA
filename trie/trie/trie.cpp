@@ -8,7 +8,7 @@ trie::trie()
 
 trie::~trie()
 {
-	delete root;
+	recursiveDeletion(root);
 }
 
 void trie::insert(const int* arr, int ID_LENGTH)
@@ -19,15 +19,14 @@ void trie::insert(const int* arr, int ID_LENGTH)
 	// Da vi kender længden for alle ID, ved vi også hvor langt vi skal iterere.
 	for (int i = 0; i < ID_LENGTH; i++)
 	{			// bruger i til at indexe direkte med da der bruges int
-		if (arr[i] != current->children_[arr[i]]->value_)
-		{
-			if (i == ID_LENGTH - 1)
-			{
-				current->children_[arr[i]] = new trieNode(arr[i], current, true);
-				return;
-			}
-			else
-				current->children_[arr[i]] = new trieNode(arr[i], current);
+		if (current->children_[arr[i]] == nullptr) {
+				if (i == ID_LENGTH - 1)
+				{
+					current->children_[arr[i]] = new trieNode(arr[i], current, true);
+					return;
+				}
+				else
+					current->children_[arr[i]] = new trieNode(arr[i], current);
 		}
 		current = current->children_[arr[i]];
 	}
@@ -36,10 +35,16 @@ void trie::insert(const int* arr, int ID_LENGTH)
 bool trie::search(const int * arr, int ID_LENGTH)
 {
 	// Root'en gemmes i current
+
 	trieNode *current = root;
+
 
 	for (int i = 0; i < ID_LENGTH; i++)
 	{
+		//is empty?
+		if (current->children_[arr[i]] == nullptr)
+			return false;
+
 		// Early exit
 		if (arr[i] != current->children_[arr[i]]->value_)
 		{
@@ -61,47 +66,68 @@ void trie::remove(const int *arr, int ID_LENGTH)
 	trieNode *current = root;
 	trieNode *temp = nullptr;
 
-	//Er der overhovedet noget i trien?
-	for (int i = 0; i < 2; i++)
-	{
-		if (current->children_[i] != nullptr)
-			break;
-		else
-			return;
-	}
-	/*
-	//hvis ja, fortsættes der her.
-	for (int i = 0; i < ID_LENGTH - 1; i++)
-	{
-		if (arr[i] == current->children_[0]->value_)
-		{
-			current = current->children_[0];
-			if (current->endOfID_ == true)
-				break;
-		}
-		else if (arr[i] == current->children_[1]->value_)
-		{
-			current = current->children_[1];
-			if (current->endOfID_ == true)
-				break;
-		}
-	}
-	*/
 
-	if (search(arr,ID_LENGTH))
-	{
 
-		//delete begins here
-		for (int i = 0; i < ID_LENGTH - 1; i++)
+		for (int i = 0; i < ID_LENGTH; i++)
 		{
-			temp = current;
-			if (current->parent_->value_ != NULL)
+			if (current->children_[arr[i]] != nullptr)
 			{
-				current = current->parent_;
-				delete temp;
+				if (arr[i] == current->children_[arr[i]]->value_)
+				{
+					current = current->children_[arr[i]];
+					if (current->endOfID_ == true && ID_LENGTH - 1 == i)
+						break;
+
+				}
 			}
 			else
 				return;
 		}
-	}
+		//delete begins here
+		for (int i = 0; i < ID_LENGTH; i++)
+		{
+			temp = current;
+			//check leafs
+			if (current->children_[0] != nullptr || current->children_[1] != nullptr)
+			{
+				current->endOfID_ = false;
+				return;
+			}
+
+			//remove begins
+			if (current->parent_->parent_!= nullptr)	//checker om parent er root
+			{
+				if (current->parent_->children_[1] == nullptr || current->parent_->children_[0] == nullptr)
+				{
+					current = current->parent_;
+					delete temp;
+				}
+				else //delete and return if parent has another child
+				{
+					//current = current->parent_;
+					delete current;
+					return;
+				}
+			}
+		}
 }
+
+
+
+void trie::recursiveDeletion(trieNode * root)	//Inspirret ud fra Troels treap deletion
+{
+
+	if (root->children_[0] != nullptr)
+	{
+		recursiveDeletion(root->children_[0]);	//Recursiv venstre barn
+	}
+	if (root->children_[1] != nullptr)
+	{
+		recursiveDeletion(root->children_[1]); //Recursiv højre barn
+	}
+	if(root != nullptr)
+		delete root;
+
+}
+
+
